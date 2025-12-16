@@ -78,5 +78,5 @@ La arquitectura sigue el patrón Repository para desacoplar la lógica de negoci
 ├── middlewares/      # Validaciones, Auth y manejo de errores
 ├── repositories/     # Acceso directo a Base de Datos (SQL Queries)
 ├── routes/           # Definición de endpoints y métodos HTTP
-└── index.ts    └── index.ts          # Punto de entrada de la aplicación
+└── index.ts          # Punto de entrada de la aplicación
 ```
