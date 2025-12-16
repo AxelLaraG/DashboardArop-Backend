@@ -1,0 +1,27 @@
+# 1. Dependencias (¡Muy importante!)
+node_modules/
+
+# 2. Variables de entorno y secretos (¡Crítico por seguridad!)
+.env
+.env.local
+.env.*.local
+
+# 3. Build de producción (TypeScript compilado)
+# Como usas TS, al compilar se generará una carpeta JS, usualmente llamada dist o build
+dist/
+build/
+
+# 4. Logs y depuración
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# 5. Archivos del Sistema Operativo (Basura)
+.DS_Store
+Thumbs.db
+
+# 6. IDEs (Opcional pero recomendado)
+.vscode/
+.idea/
