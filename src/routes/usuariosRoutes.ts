@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   crearUsuario,
   editarMiPerfil,
+  editarUsuarioAdmin,
   obtenerUsuariosPorRol,
 } from "../controllers/usuarioController";
 import { validarToken } from "../middlewares/auth";
@@ -17,6 +18,7 @@ router.get(
   obtenerUsuariosPorRol,
 );
 router.post("/createUsr", validarToken, permitirRoles(1), crearUsuario);
+router.put("/:id", validarToken, permitirRoles(1), editarUsuarioAdmin);
 
 //Rutas que solo necesitan token
 router.put("/me", validarToken, editarMiPerfil);
