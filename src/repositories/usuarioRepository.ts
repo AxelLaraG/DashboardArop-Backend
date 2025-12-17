@@ -3,8 +3,7 @@ import { Usuario } from "../interfaces/usuario";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 class UsuarioRepository {
-
-  async findAllByRole(idRol:number): Promise<RowDataPacket[]> {
+  async findAllByRole(idRol: number): Promise<RowDataPacket[]> {
     const query = `
       SELECT
         U.ID_USUARIO,
@@ -22,10 +21,10 @@ class UsuarioRepository {
       WHERE U.ID_ROL = ?
     `;
 
-    const [rows] = await db.query<RowDataPacket[]>(query,[idRol]);
+    const [rows] = await db.query<RowDataPacket[]>(query, [idRol]);
     return rows;
   }
-  
+
   async findByEmail(email: string): Promise<Usuario | null | undefined> {
     const query = "SELECT * FROM USUARIOS WHERE EMAIL = ?";
     const [rows] = await db.query<Usuario[]>(query, [email]);
@@ -57,13 +56,17 @@ class UsuarioRepository {
     const [rows] = await db.query<Usuario[]>(query, [id]);
     return rows.length > 0 ? rows[0] : null;
   }
-  
-  async updatePassword(id: number, pass: string): Promise<boolean> { 
-    const query = 'UPDATE USUARIOS SET PASSWORD = ? WHERE ID_USUARIO = ?';
-    
+
+  async updatePassword(id: number, pass: string): Promise<boolean> {
+    const query = "UPDATE USUARIOS SET PASSWORD = ? WHERE ID_USUARIO = ?";
     const [res] = await db.query<ResultSetHeader>(query, [pass, id]);
-   
-    return res.affectedRows > 0; 
+    return res.affectedRows > 0;
+  }
+
+  async update(id: number, datos: Partial<Usuario>): Promise<boolean> {
+    const query = "UPDATE USUARIOS SET ? WHERE ID_USUARIO = ?";
+    const [result] = await db.query<ResultSetHeader>(query, [datos, id]);
+    return result.affectedRows > 0;
   }
 }
 

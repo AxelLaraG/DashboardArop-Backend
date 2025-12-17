@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import usuarioRepository from "../repositories/usuarioRepository";
+import { RequestUsuario } from "../middlewares/auth";
 
 export const obtenerUsuariosPorRol = async (
   req: Request,
@@ -61,6 +62,46 @@ export const crearUsuario = async (
       .status(201)
       .json({ message: "Usuario creado correctamente", id: nuevoId });
   } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
+export const editarMiPerfil = async (
+  req: RequestUsuario,
+  res: Response,
+): Promise<void> => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ message: "Usuario no identificado" });
+    return;
+  }
+
+  const { nombre, apellido_1, apellido_2, email, fotoPerfil } = req.body;
+
+  try {
+    const actualizarDatos: any = {};
+
+    if (nombre) actualizarDatos.NOMBRE = nombre;
+    if (apellido_1) actualizarDatos.APELLIDO_1 = apellido_1;
+    if (apellido_2) actualizarDatos.APELLIDO_2 = apellido_2;
+    if (email) actualizarDatos.EMAIL = email;
+    if (fotoPerfil) actualizarDatos.FOTO_PERFIL = fotoPerfil;
+
+    if (Object.keys(actualizarDatos).length === 0) {
+      res.status(400).json({ message: "No se enviaron datos válidos para la actualización" });
+      return;
+    }
+
+    const exito = await usuarioRepository.update(userId, actualizarDatos);
+
+    if (exito) {
+      res.json({ message: 'Perfil actualizado correctamente' });
+    } else {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+  } catch (e) { 
     console.error(e);
     res.status(500).json({ message: "Error del servidor" });
   }
