@@ -18,7 +18,6 @@ export interface Propietarios extends RowDataPacket {
   ID_TIENDA: number;
   ID_USUARIO: number;
   FECHA_ASIGNACION: Date;
-  PORCENTAJE: number;
   ES_PRINCIPAL: boolean;
 }
 

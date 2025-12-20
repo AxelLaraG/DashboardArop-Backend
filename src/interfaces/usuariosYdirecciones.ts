@@ -17,12 +17,12 @@ export interface Usuario extends RowDataPacket {
 export interface Direcciones extends RowDataPacket {
   ID_DIRECCION: number;
   DIRECCION: string;
-  CP: number;
+  CP: string;
   ESTADO: string;
   MUNICIPIO: string;
   LOCALIDAD: string;
   COLONIA: string;
-  NO_INTERIOR: number;
+  NO_INTERIOR: string;
   INDICACIONES: string;
   TIPO_DOMICILIO: string;
   NOMBRE_CONTACTO: string;
