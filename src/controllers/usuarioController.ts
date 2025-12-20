@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import usuarioRepository from "../repositories/usuarioRepository";
 import { RequestUsuario } from "../middlewares/auth";
+import auditoriasRepository from "../repositories/auditoriasRepository";
 
 export const obtenerUsuariosPorRol = async (
   req: Request,
@@ -19,7 +20,7 @@ export const obtenerUsuariosPorRol = async (
 };
 
 export const crearUsuario = async (
-  req: Request,
+  req: RequestUsuario,
   res: Response,
 ): Promise<void> => {
   const { nombre, apellido1, apellido2, email, pass, idRol, credito } =
@@ -57,6 +58,15 @@ export const crearUsuario = async (
       ID_ROL: idRol,
       CREDITO: credito,
     } as any);
+
+    if (nuevoId) {
+      await auditoriasRepository.setNewAuditoria({
+        ID_USUARIO: req.user?.id,
+        TABLA: "USUARIOS",
+        TRANSACCION: `CREATE_USER (ID Nuevo: ${nuevoId})`,
+        USER_AGENT: req.get("User-Agent") || "Desconocido",
+      } as any);
+    }
 
     res
       .status(201)
@@ -99,6 +109,12 @@ export const editarMiPerfil = async (
     const exito = await usuarioRepository.update(userId, actualizarDatos);
 
     if (exito) {
+      await auditoriasRepository.setNewAuditoria({
+        ID_USUARIO: userId,
+        TABLA: "USUARIOS",
+        TRANSACCION: "UPDATE_OWN_PROFILE",
+        USER_AGENT: req.get("User-Agent") || "Desconocido",
+      } as any);
       res.json({ message: "Perfil actualizado correctamente" });
     } else {
       res.status(404).json({ message: "Usuario no encontrado" });
@@ -110,7 +126,7 @@ export const editarMiPerfil = async (
 };
 
 export const editarUsuarioAdmin = async (
-  req: Request,
+  req: RequestUsuario,
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
@@ -143,6 +159,13 @@ export const editarUsuarioAdmin = async (
     const exito = await usuarioRepository.update(Number(id), actualizarDatos);
 
     if (exito) {
+      await auditoriasRepository.setNewAuditoria({
+        ID_USUARIO: req.user.id,
+        TABLA: "USUARIOS",
+        TRANSACCION: `UPDATE_USR_PROFILE (Usuario editado: ${actualizarDatos.NOMBRE})`,
+        USER_AGENT: req.get("User-Agent") || "Desconocido",
+      } as any);
+
       res.json({
         message: "Usuario actualizado correctamente por el Administrador",
       });

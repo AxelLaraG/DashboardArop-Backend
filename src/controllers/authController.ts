@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import db from "../config/db";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import usuarioRepository from "../repositories/usuarioRepository";
 import { RequestUsuario } from "../middlewares/auth";
+import auditoriasRepository from "../repositories/auditoriasRepository";
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, pass } = req.body;
@@ -107,6 +107,13 @@ export const changePass = async (
     const updated = await usuarioRepository.update(userId, update);
 
     if (updated) {
+      await auditoriasRepository.setNewAuditoria({
+        ID_USUARIO: req.user?.id,
+        TABLA: "USUARIOS",
+        TRANSACCION: `UPDATE_PASSWORD`,
+        USER_AGENT: req.get("User-Agent") || "Desconocido", 
+      } as any);
+      
       res.json({ message: "Contraseña actualizada correctamente" });
     } else {
       res.status(500).json({ message: "No se puede actualizar la contraseña" });
