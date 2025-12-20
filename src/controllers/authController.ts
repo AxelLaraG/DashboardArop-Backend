@@ -25,11 +25,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     // }
 
     const passSuccess = await bcrypt.compare(pass, usr.PASSWORD);
-    if(!passSuccess){
-      res.status(401).json({message:'Contraseña incorrecta'});
+    if (!passSuccess) {
+      res.status(401).json({ message: "Contraseña incorrecta" });
       return;
     }
-    
 
     if (usr.ID_ESTATUS === 3 || usr.ID_ESTATUS === 2 || usr.ID_ROL === 3) {
       res.status(401).json({
@@ -102,8 +101,10 @@ export const changePass = async (
 
     const salt = await bcrypt.genSalt(10);
     const newPassEnc = await bcrypt.hash(newPass, salt);
+    const update: any = {};
+    update.PASSWORD = newPassEnc;
 
-    const updated = await usuarioRepository.updatePassword(userId, newPassEnc);
+    const updated = await usuarioRepository.update(userId, update);
 
     if (updated) {
       res.json({ message: "Contraseña actualizada correctamente" });

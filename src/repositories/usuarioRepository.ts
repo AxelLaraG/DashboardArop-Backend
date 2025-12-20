@@ -1,5 +1,5 @@
 import db from "../config/db";
-import { Usuario } from "../interfaces/usuario";
+import { Usuario } from "../interfaces/index";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 class UsuarioRepository {
@@ -11,10 +11,10 @@ class UsuarioRepository {
         U.APELLIDO_1,
         U.APELLIDO_2,
         U.EMAIL,
-        R.ROL as ROL_NAME,
-        E.ESTATUS as ESTATUS_NAME,
         U.FECHA_ALTA,
-        U.CREDITO
+        U.CREDITO,
+        R.ROL as ROL_NAME,
+        E.ESTATUS as ESTATUS_NAME
       FROM USUARIOS U
       LEFT JOIN CAT_ROLES R ON U.ID_ROL = R.ID_ROL
       LEFT JOIN CAT_ESTATUS_USUARIOS E ON U.ID_ESTATUS = E.ID_ESTATUS
@@ -52,15 +52,9 @@ class UsuarioRepository {
   }
 
   async findById(id: number): Promise<Usuario | null | undefined> {
-    const query = "SELECT * FROM USUARIOS WHERE ID_USUARIO = ?";
+    const query = `SELECT * FROM USUARIOS WHERE ID_USUARIO = ?`;
     const [rows] = await db.query<Usuario[]>(query, [id]);
     return rows.length > 0 ? rows[0] : null;
-  }
-
-  async updatePassword(id: number, pass: string): Promise<boolean> {
-    const query = "UPDATE USUARIOS SET PASSWORD = ? WHERE ID_USUARIO = ?";
-    const [res] = await db.query<ResultSetHeader>(query, [pass, id]);
-    return res.affectedRows > 0;
   }
 
   async update(id: number, datos: Partial<Usuario>): Promise<boolean> {
