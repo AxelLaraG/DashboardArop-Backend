@@ -89,15 +89,16 @@ export const editarMiPerfil = async (
   }
 
   const { nombre, apellido_1, apellido_2, email, fotoPerfil } = req.body;
+  const usr = await usuarioRepository.findById(userId);
 
   try {
     const actualizarDatos: any = {};
 
-    if (nombre) actualizarDatos.NOMBRE = nombre;
-    if (apellido_1) actualizarDatos.APELLIDO_1 = apellido_1;
-    if (apellido_2) actualizarDatos.APELLIDO_2 = apellido_2;
-    if (email) actualizarDatos.EMAIL = email;
-    if (fotoPerfil) actualizarDatos.FOTO_PERFIL = fotoPerfil;
+    if (nombre && nombre !== usr?.NOMBRE) actualizarDatos.NOMBRE = nombre;
+    if (apellido_1 && apellido_1 !== usr?.APELLIDO_2) actualizarDatos.APELLIDO_1 = apellido_1;
+    if (apellido_2 && apellido_2 !== undefined && apellido_2 !== usr?.APELLIDO_2) actualizarDatos.APELLIDO_2 = apellido_2;
+    if (email && email !== usr?.EMAIL) actualizarDatos.EMAIL = email;
+    if (fotoPerfil && fotoPerfil !== usr?.FOTO_PERFIL) actualizarDatos.FOTO_PERFIL = fotoPerfil;
 
     if (Object.keys(actualizarDatos).length === 0) {
       res.status(400).json({
@@ -139,40 +140,56 @@ export const editarUsuarioAdmin = async (
   }
 
   try {
-    const actualizarDatos: any = {};
+    const usr = await usuarioRepository.findById(Number(id));
 
-    if (nombre) actualizarDatos.NOMBRE = nombre;
-    if (apellido_1) actualizarDatos.APELLIDO_1 = apellido_1;
-    if (apellido_2) actualizarDatos.APELLIDO_2 = apellido_2;
-    if (email) actualizarDatos.EMAIL = email;
-    if (idRol) actualizarDatos.ID_ROL = idRol;
-    if (idEstatus) actualizarDatos.ID_ESTATUS = idEstatus;
-    if (credito !== undefined) {
-      if (credito) actualizarDatos.CREDITO = credito;
-    }
-
-    if (Object.keys(actualizarDatos).length === 0) {
-      res.status(400).json({ message: "No se enviaron datos para actualizar" });
+    if (!usr) {
+      res.status(404).json({ message: "Usuario no encontrado" });
       return;
     }
 
-    const exito = await usuarioRepository.update(Number(id), actualizarDatos);
+    const updateData: any = {};
+
+    if (nombre && nombre !== usr.NOMBRE) {
+      updateData.NOMBRE = nombre;
+    }
+    if (apellido_1 && apellido_1 !== usr.APELLIDO_1) {
+      updateData.APELLIDO_1 = apellido_1;
+    }
+    if (apellido_2 !== undefined && apellido_2 !== usr.APELLIDO_2) {
+      updateData.APELLIDO_2 = apellido_2;
+    }
+    if (email && email !== usr.EMAIL) {
+      updateData.EMAIL = email;
+    }
+    if (idRol && idRol !== usr.ID_ROL) {
+      updateData.ID_ROL = idRol;
+    }
+    if (idEstatus && idEstatus !== usr.ID_ESTATUS) {
+      updateData.ID_ESTATUS = idEstatus;
+    }
+    if (credito !== undefined && credito !== usr.CREDITO) {
+      updateData.CREDITO = credito;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(200).json({ message: "No se detectaron cambios" });
+      return;
+    }
+
+    const exito = await usuarioRepository.update(Number(id), updateData);
 
     if (exito) {
+      const log = Object.keys(updateData).join(",");
       await auditoriasRepository.setNewAuditoria({
         ID_USUARIO: req.user.id,
         TABLA: "USUARIOS",
-        TRANSACCION: `UPDATE_USR_PROFILE (Usuario editado: ${actualizarDatos.NOMBRE})`,
-        USER_AGENT: req.get("User-Agent") || "Desconocido",
+        TRANSACCION: `UPDATE_USR (ID: ${id} - CAMBIOS: ${log})`,
+        USER_AGENT: req.get("USER-AGENT") || "DESCONOCIDO",
       } as any);
 
-      res.json({
-        message: "Usuario actualizado correctamente por el Administrador",
-      });
+      res.json({ message: "Actualización exitosa", cambios: `${log}` });
     } else {
-      res
-        .status(404)
-        .json({ message: "No se encontró el usuario para editar" });
+      res.status(500).json({ message: "No se pudo actualizar el usuario" });
     }
   } catch (e: any) {
     if (e.code === "ER_DUP_ENTRY") {

@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import usuariosRoutes from "./routes/usuariosRoutes";
+import tiendasRoutes from "./routes/tiendasRoutes"
 
 const app = express();
 const PORT = process.env.PORT as string;
@@ -15,6 +16,7 @@ app.listen(PORT, () => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/tiendas', tiendasRoutes);
 
 app.use((req, res, next) => {
     res.status(404).json({ message: 'Ruta no encontrada' });
