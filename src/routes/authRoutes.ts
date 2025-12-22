@@ -5,6 +5,6 @@ import { validarToken } from "../middlewares/auth";
 const router = Router();
 
 router.post("/login", login);
-router.post("/changePass", validarToken, changePass);
+router.patch("/password", validarToken, changePass);
 
 export default router;

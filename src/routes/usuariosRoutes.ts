@@ -11,16 +11,13 @@ import { permitirRoles } from "../middlewares/roles";
 const router = Router();
 
 // Rutas de administrador
-router.get(
-  "/getUsrsByRole",
-  validarToken,
-  permitirRoles(1,4),
-  obtenerUsuariosPorRol,
-);
-router.post("/createUsr", validarToken, permitirRoles(1,4), crearUsuario);
-router.put("/:id", validarToken, permitirRoles(1,4), editarUsuarioAdmin);
+router.get("/users", validarToken, permitirRoles(1, 4), obtenerUsuariosPorRol);
+router.post("/users", validarToken, permitirRoles(1, 4), crearUsuario);
+router.put("/users/:id", validarToken, permitirRoles(1, 4), editarUsuarioAdmin);
+router.delete("/users/:id", validarToken, permitirRoles(1,4), eliminarUsuario);
 
 //Rutas que solo necesitan token
-router.put("/me", validarToken, editarMiPerfil);
+router.patch("/users/me", validarToken, editarMiPerfil);
+
 
 export default router;

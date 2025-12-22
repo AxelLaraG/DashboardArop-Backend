@@ -1,6 +1,6 @@
 import db from "../config/db";
 import { Tiendas, Direcciones } from "../interfaces/index";
-import { PoolConnection, ResultSetHeader } from "mysql2/promise";
+import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 class TiendaRepository {
   async crearTiendaConTransaccion(
@@ -27,11 +27,11 @@ class TiendaRepository {
         dir.MUNICIPIO,
         dir.LOCALIDAD,
         dir.COLONIA,
-        dir.NO_INTERIOR || '',
+        dir.NO_INTERIOR || "",
         dir.INDICACIONES,
         dir.TIPO_DOMICILIO,
         dir.NOMBRE_CONTACTO,
-        dir.TEL_CONTACTO
+        dir.TEL_CONTACTO,
       ]);
 
       const idNewDir = resDir.insertId;
@@ -51,7 +51,7 @@ class TiendaRepository {
         shop.EMAIL,
         shop.TELEFONO,
         shop.CLABE_IBAN,
-        shop.RFC
+        shop.RFC,
       ]);
 
       const idNewShop = resShop.insertId;
@@ -63,21 +63,29 @@ class TiendaRepository {
         ) VALUES (?, ?, NOW(), 1)
       `;
 
-      await conn.query<ResultSetHeader>(queryProp, [
-        idNewShop,
-        propietario
-      ]);
+      await conn.query<ResultSetHeader>(queryProp, [idNewShop, propietario]);
 
       await conn.commit();
-      
+
       return idNewShop;
     } catch (e) {
       if (conn) await conn.rollback();
       throw e;
-    } finally { 
+    } finally {
       if (conn) conn.release();
     }
   }
+
+  async findById(id:number): Promise<Tiendas | null | undefined> {
+    const query = `
+      SELECT * FROM TIENDAS WHERE ID_TIENDA = ?
+    `;
+    
+    const [rows] = await db.query<Tiendas[]>(query,[id]);
+    return rows.length > 0 ? rows[0] : null;
+  }
+  
+  
 }
 
 export default new TiendaRepository();
