@@ -15,7 +15,7 @@ app.listen(PORT, () => {
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/users', usuariosRoutes);
 app.use('/api/tiendas', tiendasRoutes);
 
 app.use((req, res, next) => {

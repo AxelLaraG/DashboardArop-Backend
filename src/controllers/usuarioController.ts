@@ -95,10 +95,17 @@ export const editarMiPerfil = async (
     const actualizarDatos: any = {};
 
     if (nombre && nombre !== usr?.NOMBRE) actualizarDatos.NOMBRE = nombre;
-    if (apellido_1 && apellido_1 !== usr?.APELLIDO_2) actualizarDatos.APELLIDO_1 = apellido_1;
-    if (apellido_2 && apellido_2 !== undefined && apellido_2 !== usr?.APELLIDO_2) actualizarDatos.APELLIDO_2 = apellido_2;
+    if (apellido_1 && apellido_1 !== usr?.APELLIDO_2)
+      actualizarDatos.APELLIDO_1 = apellido_1;
+    if (
+      apellido_2 &&
+      apellido_2 !== undefined &&
+      apellido_2 !== usr?.APELLIDO_2
+    )
+      actualizarDatos.APELLIDO_2 = apellido_2;
     if (email && email !== usr?.EMAIL) actualizarDatos.EMAIL = email;
-    if (fotoPerfil && fotoPerfil !== usr?.FOTO_PERFIL) actualizarDatos.FOTO_PERFIL = fotoPerfil;
+    if (fotoPerfil && fotoPerfil !== usr?.FOTO_PERFIL)
+      actualizarDatos.FOTO_PERFIL = fotoPerfil;
 
     if (Object.keys(actualizarDatos).length === 0) {
       res.status(400).json({
@@ -201,5 +208,49 @@ export const editarUsuarioAdmin = async (
 
     console.error(e);
     res.status(500).json({ message: "Error interno al actualizar usuario" });
+  }
+};
+
+export const eliminarUsuario = async (
+  req: RequestUsuario,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  if (!id || isNaN(Number(id))) {
+    res.status(400).json({ message: "ID de usuario inválido" });
+    return;
+  }
+
+  try {
+    const usr = await usuarioRepository.findById(Number(id));
+
+    if (!usr) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
+    }
+
+    if (Number(id) === req.user.id) {
+      res.status(400).json({ message: "No puedes eliminar tu propio usuario" });
+      return;
+    }
+
+    const exito = await usuarioRepository.update(Number(id), {
+      ID_ESTATUS: 2,
+    } as any);
+
+    if (exito) {
+      await auditoriasRepository.setNewAuditoria({
+        ID_USUARIO: req.user.id,
+        TABLA: "USUARIOS",
+        TRANSACCION: `DELETE_USR (ID: ${usr} - NAME: ${usr.NOMBRE} ${usr.APELLIDO_1} ${usr.APELLIDO_2})`,
+        USER_AGENT: req.get("User-Agent") || "Desconocido",
+      } as any);
+    } else {
+      res.status(500).json({ message: "No se pudo eliminar al usuario" });
+    }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({message:'Error interno al eliminar el usuario'});
   }
 };
