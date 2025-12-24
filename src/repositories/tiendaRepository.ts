@@ -75,6 +75,26 @@ class TiendaRepository {
       if (conn) conn.release();
     }
   }
+  
+  async getTiendas(): Promise<RowDataPacket[]> { 
+    const query = `
+      SELECT
+        T.NOMBRE_LEGAL,
+        T.NOMBRE_COMERCIAL,
+        T.LOGO,
+        T.DESCRIPCION,
+        T.EMAIL,
+        T.TELEFONO,
+        T.CLABE_IBAN,
+        T.RFC,
+        E.ESTATUS as ESTATUS_NAME
+      FROM TIENDAS T
+      LEFT JOIN CAT_ESTATUS_TIENDA E ON T.ID_ESTATUS = E.ID_ESTATUS
+      `;
+    
+    const [rows] = await db.query<RowDataPacket[]>(query)
+    return rows;
+  }
 
   async findById(id: number): Promise<Tiendas | null | undefined> {
     const query = `
@@ -83,18 +103,6 @@ class TiendaRepository {
 
     const [rows] = await db.query<Tiendas[]>(query, [id]);
     return rows.length > 0 ? rows[0] : null;
-  }
-
-  async validateOwner(usrId: number, shopId: number): Promise<boolean> {
-    const query = `SELECT EXISTS(
-      SELECT 1
-      FROM PROPIETARIOS_TIENDA
-      WHERE ID_TIENDA = ? AND ID_USUARIO = ?
-    ) as existe`;
-    
-    const [rows] = await db.query<RowDataPacket[]>(query, [shopId, usrId]);
-    
-    return rows[0]?.existe === 1;
   }
 
   async actualizarTiendaConTransaccion(
@@ -234,6 +242,49 @@ class TiendaRepository {
     } finally {
       if (conn) conn.release();
     }
+  }
+  
+  async getOwnersFromShop(shopId: number): Promise<RowDataPacket[]> { 
+    const query = `
+      SELECT
+        U.NOMBRE,
+        U.APELLIDO_1,
+        U.APELLIDO_2,
+        U.EMAIL,
+        U.FOTO_PERFIL,
+        PT.ES_PRINCIPAL,
+        PT.FECHA_ASIGNACION
+      FROM USUARIOS U
+      INNER JOIN PROPIETARIOS_TIENDA PT ON U.ID_USUARIO = PT.ID_USUARIO
+      WHERE PT.ID_TIENDA = ?
+      `;
+    
+    const [rows] = await db.query<RowDataPacket[]>(query, [shopId]);
+    return rows;
+  }
+
+  async addOwner(usrId: number, shopId: number): Promise<boolean> {
+    const query = `INSERT INTO PROPIETARIOS_TIENDA (ID_TIENDA, ID_USUARIO, FECHA_ASIGNACION, ES_PRINCIPAL) VALUES (?, ?, NOW(), 0)`;
+    const [res] = await db.query<ResultSetHeader>(query, [shopId, usrId]);
+    return res.affectedRows > 0;
+  }
+  
+  async deleteOwner(userId: number, shopId: number): Promise<boolean> { 
+    const query = `DELETE FROM PROPIETARIOS_TIENDA WHERE ID_USER = ? AND ID_TIENDA = ?`
+    const [res] = await db.query<ResultSetHeader>(query, [userId, shopId]);
+    return res.affectedRows > 0;
+  }
+  
+  async validateOwner(usrId: number, shopId: number): Promise<boolean> {
+    const query = `SELECT EXISTS(
+      SELECT 1
+      FROM PROPIETARIOS_TIENDA
+      WHERE ID_TIENDA = ? AND ID_USUARIO = ?
+    ) as existe`;
+
+    const [rows] = await db.query<RowDataPacket[]>(query, [shopId, usrId]);
+
+    return rows[0]?.existe === 1;
   }
 }
 
