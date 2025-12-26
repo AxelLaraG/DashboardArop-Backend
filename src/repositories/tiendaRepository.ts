@@ -75,8 +75,8 @@ class TiendaRepository {
       if (conn) conn.release();
     }
   }
-  
-  async getTiendas(): Promise<RowDataPacket[]> { 
+
+  async getTiendas(): Promise<RowDataPacket[]> {
     const query = `
       SELECT
         T.NOMBRE_LEGAL,
@@ -91,8 +91,8 @@ class TiendaRepository {
       FROM TIENDAS T
       LEFT JOIN CAT_ESTATUS_TIENDA E ON T.ID_ESTATUS = E.ID_ESTATUS
       `;
-    
-    const [rows] = await db.query<RowDataPacket[]>(query)
+
+    const [rows] = await db.query<RowDataPacket[]>(query);
     return rows;
   }
 
@@ -128,109 +128,23 @@ class TiendaRepository {
       const idDir = tiendaRows[0]?.ID_DIRECCION;
 
       if (Object.keys(dir).length > 0) {
-        const updateDirFields: string[] = [];
-        const updateDirValues: any[] = [];
+        const setClause = Object.keys(dir)
+          .map((key) => `${key} = ?`)
+          .join(", ");
+        const values = Object.values(dir);
+        const queryDir = `UPDATE DIRECCIONES SET ${setClause} WHERE ID_DIRECCION = ?`;
 
-        if (dir.DIRECCION !== undefined) {
-          updateDirFields.push("DIRECCION = ?");
-          updateDirValues.push(dir.DIRECCION);
-        }
-        if (dir.CP !== undefined) {
-          updateDirFields.push("CP = ?");
-          updateDirValues.push(dir.CP);
-        }
-        if (dir.ESTADO !== undefined) {
-          updateDirFields.push("ESTADO = ?");
-          updateDirValues.push(dir.ESTADO);
-        }
-        if (dir.MUNICIPIO !== undefined) {
-          updateDirFields.push("MUNICIPIO = ?");
-          updateDirValues.push(dir.MUNICIPIO);
-        }
-        if (dir.LOCALIDAD !== undefined) {
-          updateDirFields.push("LOCALIDAD = ?");
-          updateDirValues.push(dir.LOCALIDAD);
-        }
-        if (dir.COLONIA !== undefined) {
-          updateDirFields.push("COLONIA = ?");
-          updateDirValues.push(dir.COLONIA);
-        }
-        if (dir.NO_INTERIOR !== undefined) {
-          updateDirFields.push("NO_INTERIOR = ?");
-          updateDirValues.push(dir.NO_INTERIOR);
-        }
-        if (dir.INDICACIONES !== undefined) {
-          updateDirFields.push("INDICACIONES = ?");
-          updateDirValues.push(dir.INDICACIONES);
-        }
-        if (dir.TIPO_DOMICILIO !== undefined) {
-          updateDirFields.push("TIPO_DOMICILIO = ?");
-          updateDirValues.push(dir.TIPO_DOMICILIO);
-        }
-        if (dir.NOMBRE_CONTACTO !== undefined) {
-          updateDirFields.push("NOMBRE_CONTACTO = ?");
-          updateDirValues.push(dir.NOMBRE_CONTACTO);
-        }
-        if (dir.TEL_CONTACTO !== undefined) {
-          updateDirFields.push("TEL_CONTACTO = ?");
-          updateDirValues.push(dir.TEL_CONTACTO);
-        }
-
-        if (updateDirFields.length > 0) {
-          const queryDir = `UPDATE DIRECCIONES SET ${updateDirFields.join(", ")} WHERE ID_DIRECCION = ?`;
-
-          updateDirValues.push(idDir);
-          await conn.query(queryDir, updateDirValues);
-        }
+        await conn.query(queryDir, [...values, idDir]);
       }
 
       if (Object.keys(shop).length > 0) {
-        const updateShopFields: string[] = [];
-        const updateShopValues: any[] = [];
+        const setClause = Object.keys(shop)
+          .map((key) => `${key} = ?`)
+          .join(", ");
+        const values = Object.values(shop);
+        const queryShop = `UPDATE TIENDAS SET ${setClause} WHERE ID_TIENDA = ?`;
 
-        if (shop.ID_ESTATUS !== undefined) {
-          updateShopFields.push("ID_ESTATUS = ?");
-          updateShopValues.push(shop.ID_ESTATUS);
-        }
-        if (shop.NOMBRE_LEGAL !== undefined) {
-          updateShopFields.push("NOMBRE_LEGAL = ?");
-          updateShopValues.push(shop.NOMBRE_LEGAL);
-        }
-        if (shop.NOMBRE_COMERCIAL !== undefined) {
-          updateShopFields.push("NOMBRE_COMERCIAL = ?");
-          updateShopValues.push(shop.NOMBRE_COMERCIAL);
-        }
-        if (shop.LOGO !== undefined) {
-          updateShopFields.push("LOGO = ?");
-          updateShopValues.push(shop.LOGO);
-        }
-        if (shop.DESCRIPCION !== undefined) {
-          updateShopFields.push("DESCRIPCION = ?");
-          updateShopValues.push(shop.DESCRIPCION);
-        }
-        if (shop.EMAIL !== undefined) {
-          updateShopFields.push("EMAIL = ?");
-          updateShopValues.push(shop.EMAIL);
-        }
-        if (shop.TELEFONO !== undefined) {
-          updateShopFields.push("TELEFONO = ?");
-          updateShopValues.push(shop.TELEFONO);
-        }
-        if (shop.CLABE_IBAN !== undefined) {
-          updateShopFields.push("CLABE_IBAN = ?");
-          updateShopValues.push(shop.CLABE_IBAN);
-        }
-        if (shop.RFC !== undefined) {
-          updateShopFields.push("RFC = ?");
-          updateShopValues.push(shop.RFC);
-        }
-
-        if (updateShopFields.length > 0) {
-          const queryShop = `UPDATE TIENDAS SET ${updateShopFields.join(", ")} WHERE ID_TIENDA = ?`;
-
-          updateShopValues.push(idShop);
-          await conn.query(queryShop, updateShopValues);
-        }
+        await conn.query(queryShop, [...values, idShop]);
       }
 
       await conn.commit();
@@ -243,8 +157,8 @@ class TiendaRepository {
       if (conn) conn.release();
     }
   }
-  
-  async getOwnersFromShop(shopId: number): Promise<RowDataPacket[]> { 
+
+  async getOwnersFromShop(shopId: number): Promise<RowDataPacket[]> {
     const query = `
       SELECT
         U.NOMBRE,
@@ -258,7 +172,7 @@ class TiendaRepository {
       INNER JOIN PROPIETARIOS_TIENDA PT ON U.ID_USUARIO = PT.ID_USUARIO
       WHERE PT.ID_TIENDA = ?
       `;
-    
+
     const [rows] = await db.query<RowDataPacket[]>(query, [shopId]);
     return rows;
   }
@@ -268,13 +182,13 @@ class TiendaRepository {
     const [res] = await db.query<ResultSetHeader>(query, [shopId, usrId]);
     return res.affectedRows > 0;
   }
-  
-  async deleteOwner(userId: number, shopId: number): Promise<boolean> { 
-    const query = `DELETE FROM PROPIETARIOS_TIENDA WHERE ID_USER = ? AND ID_TIENDA = ?`
+
+  async deleteOwner(userId: number, shopId: number): Promise<boolean> {
+    const query = `DELETE FROM PROPIETARIOS_TIENDA WHERE ID_USER = ? AND ID_TIENDA = ?`;
     const [res] = await db.query<ResultSetHeader>(query, [userId, shopId]);
     return res.affectedRows > 0;
   }
-  
+
   async validateOwner(usrId: number, shopId: number): Promise<boolean> {
     const query = `SELECT EXISTS(
       SELECT 1
