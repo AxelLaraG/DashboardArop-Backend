@@ -9,25 +9,7 @@ export const crearTienda = async (
   req: RequestUsuario,
   res: Response,
 ): Promise<void> => {
-  const userId = req.user.id;
-  const { shop, dir } = req.body;
-
-  if (!userId) {
-    res.status(401).json({ message: "Usuario no identificado" });
-    return;
-  }
-
-  if (!shop || !dir) {
-    res
-      .status(400)
-      .json({ message: "Faltan datos de la tienda o la dirección" });
-    return;
-  }
-
-  if (!shop.nombreLegal || !shop.rfc || !shop.calle || !shop.cp) {
-    res.status(400).json({ message: "Faltan datos importantes" });
-    return;
-  }
+  const { shop, dir, ownId } = req.body;
 
   try {
     const newShop: Partial<Tiendas> = {
@@ -58,12 +40,12 @@ export const crearTienda = async (
     const idNewShop = await tiendaRepository.crearTiendaConTransaccion(
       newShop,
       newDir,
-      userId,
+      ownId,
     );
 
     if (idNewShop) {
       await auditoriasRepository.setNewAuditoria({
-        ID_USUARIO: userId,
+        ID_USUARIO: req.user.id,
         TABLA: "TIENDAS",
         TRANSACCION: `CREATE_STORE (ID: ${idNewShop} - ${newShop.NOMBRE_COMERCIAL})`,
         USER_AGENT: req.get("User-Agent") || "Desconocido",
@@ -94,16 +76,6 @@ export const editarTienda = async (
   const { id } = req.params;
   const userId = req.user.id;
   const { shop, dir } = req.body;
-
-  if (!id || isNaN(Number(id))) {
-    res.status(400).json({ message: "ID de tienda inválido" });
-    return;
-  }
-
-  if (!shop && !dir) {
-    res.status(400).json({ message: "No se enviaron datos para actualizar" });
-    return;
-  }
 
   if (
     req.user.role === 2 &&

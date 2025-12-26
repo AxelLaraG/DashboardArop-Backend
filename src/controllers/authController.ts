@@ -17,23 +17,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         .json({ message: "Credenciales inválidas (Usuario no encontrado)" });
       return;
     }
-
-    //Modo Pruebas
-    // if (pass != usr.PASSWORD) {
-    //   res.status(401).json({ message: "Contraseña incorrecta" });
-    //   return;
-    // }
-
+    
     const passSuccess = await bcrypt.compare(pass, usr.PASSWORD);
     if (!passSuccess) {
       res.status(401).json({ message: "Contraseña incorrecta" });
-      return;
-    }
-
-    if (usr.ID_ESTATUS === 3 || usr.ID_ESTATUS === 2 || usr.ID_ROL === 3) {
-      res.status(401).json({
-        message: "Usuario no permitido, por favor contacte un administrador",
-      });
       return;
     }
 
@@ -73,11 +60,6 @@ export const changePass = async (
     return;
   }
 
-  if (!actualPass || !newPass) {
-    res.status(400).json({ message: "Faltan datos obligatorios" });
-    return;
-  }
-
   try {
     const usr = await usuarioRepository.findById(userId);
 
@@ -101,10 +83,10 @@ export const changePass = async (
 
     const salt = await bcrypt.genSalt(10);
     const newPassEnc = await bcrypt.hash(newPass, salt);
-    const update: any = {};
-    update.PASSWORD = newPassEnc;
 
-    const updated = await usuarioRepository.update(userId, update);
+    const updated = await usuarioRepository.update(userId, {
+      PASSWORD: newPassEnc
+    } as any);
 
     if (updated) {
       await auditoriasRepository.setNewAuditoria({

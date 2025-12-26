@@ -26,18 +26,6 @@ export const crearUsuario = async (
   const { nombre, apellido1, apellido2, email, pass, idRol, credito } =
     req.body;
 
-  if (
-    !nombre ||
-    !apellido1 ||
-    !email ||
-    !pass ||
-    !idRol ||
-    credito === undefined
-  ) {
-    res.status(400).json({ message: "Faltan datos obligatorios" });
-    return;
-  }
-
   const exists = await usuarioRepository.findByEmail(email);
 
   if (exists) {
@@ -88,21 +76,21 @@ export const editarMiPerfil = async (
     return;
   }
 
-  const { nombre, apellido_1, apellido_2, email, fotoPerfil } = req.body;
+  const { nombre, apellido1, apellido2, email, fotoPerfil } = req.body;
   const usr = await usuarioRepository.findById(userId);
 
   try {
     const actualizarDatos: any = {};
 
     if (nombre && nombre !== usr?.NOMBRE) actualizarDatos.NOMBRE = nombre;
-    if (apellido_1 && apellido_1 !== usr?.APELLIDO_2)
-      actualizarDatos.APELLIDO_1 = apellido_1;
+    if (apellido1 && apellido1 !== usr?.APELLIDO_2)
+      actualizarDatos.APELLIDO_1 = apellido1;
     if (
-      apellido_2 &&
-      apellido_2 !== undefined &&
-      apellido_2 !== usr?.APELLIDO_2
+      apellido2 &&
+      apellido2 !== undefined &&
+      apellido2 !== usr?.APELLIDO_2
     )
-      actualizarDatos.APELLIDO_2 = apellido_2;
+      actualizarDatos.APELLIDO_2 = apellido2;
     if (email && email !== usr?.EMAIL) actualizarDatos.EMAIL = email;
     if (fotoPerfil && fotoPerfil !== usr?.FOTO_PERFIL)
       actualizarDatos.FOTO_PERFIL = fotoPerfil;
@@ -140,11 +128,6 @@ export const editarUsuarioAdmin = async (
   const { id } = req.params;
   const { nombre, apellido_1, apellido_2, email, idRol, idEstatus, credito } =
     req.body;
-
-  if (!id || isNaN(Number(id))) {
-    res.status(400).json({ message: "ID de usuario inválido" });
-    return;
-  }
 
   try {
     const usr = await usuarioRepository.findById(Number(id));
@@ -216,11 +199,6 @@ export const eliminarUsuario = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
-
-  if (!id || isNaN(Number(id))) {
-    res.status(400).json({ message: "ID de usuario inválido" });
-    return;
-  }
 
   try {
     const usr = await usuarioRepository.findById(Number(id));
