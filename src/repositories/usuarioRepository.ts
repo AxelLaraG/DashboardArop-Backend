@@ -1,5 +1,5 @@
 import db from "../config/db";
-import { Usuario } from "../interfaces/index";
+import { NewUsuario, Usuario } from "../interfaces/index";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 class UsuarioRepository {
@@ -32,7 +32,7 @@ class UsuarioRepository {
     return rows.length > 0 ? rows[0] : null;
   }
 
-  async createUsr(usuario: Partial<Usuario>): Promise<number> {
+  async createUsr(usuario: NewUsuario): Promise<number> {
     const query = `
       INSERT INTO USUARIOS (NOMBRE, APELLIDO_1, APELLIDO_2, EMAIL, PASSWORD, ID_ROL, ID_ESTATUS, FECHA_ALTA, CREDITO)
       VALUES (?,?,?,?,?,?,1,NOW(),?)

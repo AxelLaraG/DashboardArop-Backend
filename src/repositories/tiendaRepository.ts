@@ -1,11 +1,11 @@
 import db from "../config/db";
-import { Tiendas, Direcciones, Propietarios } from "../interfaces/index";
+import { Tiendas, Direcciones, Propietarios, NewTienda, NewDireccion } from "../interfaces/index";
 import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 class TiendaRepository {
   async crearTiendaConTransaccion(
-    shop: Partial<Tiendas>,
-    dir: Partial<Direcciones>,
+    shop: NewTienda,
+    dir: NewDireccion,
     propietario: number,
   ): Promise<number> {
     let conn: PoolConnection | null = null;

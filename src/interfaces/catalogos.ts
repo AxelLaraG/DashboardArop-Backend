@@ -22,3 +22,8 @@ export interface CatColores extends RowDataPacket {
   ID_COLOR: number;
   COLOR: string;
 }
+
+export type NewEstatus = Omit<CatEstatus, 'ID_ESTATUS'>
+export type NewTipo = Omit<CatTipo, 'ID_TIPO'>
+export type NewRol = Omit<CatRoles, 'ID_ROL'>
+export type NewColor = Omit<CatColores, 'ID_COLOR'>

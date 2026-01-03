@@ -1,5 +1,5 @@
 import db from "../config/db";
-import { Auditorias } from "../interfaces";
+import { Auditorias, NewAuditoria } from "../interfaces";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 class AuditoriasRepository {
@@ -9,7 +9,7 @@ class AuditoriasRepository {
     return rows;
   }
 
-  async setNewAuditoria(auditoria: Partial<Auditorias>): Promise<number> {
+  async setNewAuditoria(auditoria: NewAuditoria): Promise<number> {
     const query = `INSERT INTO AUDITORIAS (ID_USUARIO, TABLA, TRANSACCION, FECHA, USER_AGENT) VALUES (?,?,?,NOW(),?)`;
     const [result] = await db.query<ResultSetHeader>(query, [
       auditoria.ID_USUARIO,

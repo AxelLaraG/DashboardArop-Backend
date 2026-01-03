@@ -34,3 +34,7 @@ export interface UsuariosDir extends RowDataPacket {
   ID_DIRECCION: number;
   ID_TIPO: number;
 }
+
+export type NewUsuario = Omit<Usuario, 'ID_USUARIO' | 'ID_ESTATUS' | 'FECHA_ALTA'>;
+export type NewDireccion = Omit<Direcciones, 'ID_DIRECCION'>;
+export type NewUsuarioDir = UsuariosDir;

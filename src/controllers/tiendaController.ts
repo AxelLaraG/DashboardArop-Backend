@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { RequestUsuario } from "../middlewares/auth";
-import { Tiendas, Direcciones } from "../interfaces";
+import { Tiendas, Direcciones, NewTienda, NewDireccion } from "../interfaces";
 import tiendaRepository from "../repositories/tiendaRepository";
 import auditoriasRepository from "../repositories/auditoriasRepository";
 import direccionRepository from "../repositories/direccionRepository";
@@ -12,7 +12,7 @@ export const crearTienda = async (
   const { shop, dir, ownId } = req.body;
 
   try {
-    const newShop: Partial<Tiendas> = {
+    const newShop: NewTienda = {
       NOMBRE_LEGAL: shop.nombreLegal,
       NOMBRE_COMERCIAL: shop.nombreComercial,
       LOGO: shop.logo || null,
@@ -21,9 +21,9 @@ export const crearTienda = async (
       TELEFONO: shop.telefono,
       CLABE_IBAN: shop.clabe,
       RFC: shop.rfc,
-    } as any;
+    };
 
-    const newDir: Partial<Direcciones> = {
+    const newDir: NewDireccion = {
       DIRECCION: dir.direccion,
       CP: dir.cp,
       ESTADO: dir.estado,
@@ -35,7 +35,7 @@ export const crearTienda = async (
       TIPO_DOMICILIO: dir.tipoDomicilio,
       NOMBRE_CONTACTO: dir.nombreContacto,
       TEL_CONTACTO: dir.telContacto,
-    } as any;
+    };
 
     const idNewShop = await tiendaRepository.crearTiendaConTransaccion(
       newShop,
@@ -49,7 +49,7 @@ export const crearTienda = async (
         TABLA: "TIENDAS",
         TRANSACCION: `CREATE_STORE (ID: ${idNewShop} - ${newShop.NOMBRE_COMERCIAL})`,
         USER_AGENT: req.get("User-Agent") || "Desconocido",
-      } as any);
+      });
     }
 
     res
@@ -214,7 +214,7 @@ export const editarTienda = async (
         TABLA: "TIENDAS",
         TRANSACCION: `UPDATE_STORE (ID: ${id} - CAMBIOS: ${cambios})`,
         USER_AGENT: req.get("User-Agent") || "Desconocido",
-      } as any);
+      });
 
       res.json({ message: "Tienda actualizada correctamente" });
     } else {

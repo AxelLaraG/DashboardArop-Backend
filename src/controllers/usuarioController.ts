@@ -45,7 +45,7 @@ export const crearUsuario = async (
       PASSWORD: passEncript,
       ID_ROL: idRol,
       CREDITO: credito,
-    } as any);
+    });
 
     if (nuevoId) {
       await auditoriasRepository.setNewAuditoria({
@@ -53,7 +53,7 @@ export const crearUsuario = async (
         TABLA: "USUARIOS",
         TRANSACCION: `CREATE_USER (ID Nuevo: ${nuevoId})`,
         USER_AGENT: req.get("User-Agent") || "Desconocido",
-      } as any);
+      });
     }
 
     res
@@ -110,7 +110,7 @@ export const editarMiPerfil = async (
         TABLA: "USUARIOS",
         TRANSACCION: "UPDATE_OWN_PROFILE",
         USER_AGENT: req.get("User-Agent") || "Desconocido",
-      } as any);
+      });
       res.json({ message: "Perfil actualizado correctamente" });
     } else {
       res.status(404).json({ message: "Usuario no encontrado" });
@@ -175,7 +175,7 @@ export const editarUsuarioAdmin = async (
         TABLA: "USUARIOS",
         TRANSACCION: `UPDATE_USR (ID: ${id} - CAMBIOS: ${log})`,
         USER_AGENT: req.get("USER-AGENT") || "DESCONOCIDO",
-      } as any);
+      });
 
       res.json({ message: "Actualización exitosa", cambios: `${log}` });
     } else {
@@ -223,7 +223,7 @@ export const eliminarUsuario = async (
         TABLA: "USUARIOS",
         TRANSACCION: `DELETE_USR (ID: ${usr} - NAME: ${usr.NOMBRE} ${usr.APELLIDO_1} ${usr.APELLIDO_2})`,
         USER_AGENT: req.get("User-Agent") || "Desconocido",
-      } as any);
+      });
     } else {
       res.status(500).json({ message: "No se pudo eliminar al usuario" });
     }

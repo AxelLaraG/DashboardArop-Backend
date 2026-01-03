@@ -43,3 +43,18 @@ export interface DetallesPedidos extends RowDataPacket {
   PRECIO_UNITARIO: number;
   SUBTOTAL: number;
 }
+
+export type NewMetodoPago = Omit<MetodosPago, "ID_METODO">;
+export type NewPedido = Omit<Pedidos, "ID_PEDIDO" | "FECHA_PEDIDO">;
+export type NewTransaccion = Omit<
+  Transacciones,
+  "ID_TRANSACCION" | "FECHA_TRANSACCION" | "ID_PEDIDO"
+> & {
+  ID_PEDIDO?: number;
+};
+export type NewDetallePedidos = Omit<
+  DetallesPedidos,
+  "ID_DETALLE" | "ID_PEDIDO"
+> & {
+  ID_PEDIDO?: number;
+};

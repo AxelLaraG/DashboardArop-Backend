@@ -8,3 +8,5 @@ export interface Auditorias extends RowDataPacket {
   FECHA: Date;
   USER_AGENT: string;
 }
+
+export type NewAuditoria = Omit<Auditorias, 'ID_AUDITORIA' | 'FECHA'>;

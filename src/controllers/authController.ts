@@ -94,7 +94,7 @@ export const changePass = async (
         TABLA: "USUARIOS",
         TRANSACCION: `UPDATE_PASSWORD`,
         USER_AGENT: req.get("User-Agent") || "Desconocido", 
-      } as any);
+      });
       
       res.json({ message: "Contraseña actualizada correctamente" });
     } else {

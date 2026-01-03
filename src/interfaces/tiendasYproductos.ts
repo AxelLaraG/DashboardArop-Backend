@@ -43,3 +43,20 @@ export interface VariantesProductos extends RowDataPacket {
   STOCK: number;
   STOCK_WARN: number;
 }
+
+export type NewTienda = Omit<
+  Tiendas,
+  "ID_TIENDA" | "ID_ESTATUS" | "ID_DIRECCION"
+> & {
+  ID_DIRECCION?: number;
+};
+
+export type NewPropietario = Omit<Propietarios, "FECHA_ASIGNACION">;
+export type NewProducto = Omit<Productos, "ID_PRODUCTO">;
+
+export type NewVarianteProducto = Omit<
+  VariantesProductos,
+  "ID_VARIANTE" | "ID_ESTATUS" | "ID_PRUDCTO"
+> & {
+  ID_PRODUCTO?: number;
+};
