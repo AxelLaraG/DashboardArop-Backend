@@ -1,9 +1,17 @@
 import { Router } from "express";
-import { crearProducto, listarProductosPorTienda } from "../controllers/productosController";
+import {
+  crearProducto,
+  editarProductoCompleto,
+  listarProductosPorTienda,
+} from "../controllers/productosController";
 import { validarToken } from "../middlewares/auth";
 import { permitirRoles } from "../middlewares/roles";
 import { validate } from "../middlewares/validate";
-import { crearProductoSchema, getProductosShop } from "../schemas/productoSchema";
+import {
+  crearProductoSchema,
+  editProducto,
+  getProductosShop,
+} from "../schemas/productoSchema";
 
 const router = Router();
 
@@ -22,4 +30,11 @@ router.get(
   listarProductosPorTienda
 );
 
+router.put(
+  "/:id",
+  validarToken,
+  permitirRoles(1, 2),
+  validate(editProducto),
+  editarProductoCompleto
+);
 export default router;

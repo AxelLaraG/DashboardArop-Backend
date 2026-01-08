@@ -4,13 +4,15 @@ import {
   VariantesProductos,
   NewProducto,
   NewVarianteProducto,
+  ProductoEdit,
+  VarianteEdit,
 } from "../interfaces";
 import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 class ProductosRepository {
   async crearProductoConVariantes(
     prod: NewProducto,
-    variantes: NewVarianteProducto[],
+    variantes: NewVarianteProducto[]
   ): Promise<number> {
     let conn: PoolConnection | null = null;
 
@@ -103,7 +105,135 @@ class ProductosRepository {
     };
   }
 
-  
+  async findProducto(id: number): Promise<Productos | null | undefined> {
+    const query = "SELECT * FROM PRODUCTOS WHERE ID_PRODUCTO = ?";
+    const [rows] = await db.query<Productos[]>(query, [id]);
+    return rows.length > 0 ? rows[0] : null;
+  }
+
+  async productoUpdate(
+    idProd: number,
+    prodData: ProductoEdit,
+    variantes: VarianteEdit[]
+  ): Promise<boolean> {
+    let conn: PoolConnection | null = null;
+
+    try {
+      conn = await db.getConnection();
+      await conn.beginTransaction();
+
+      const [currentVars] = await conn.query<VariantesProductos[]>(
+        "SELECT ID_VARIANTE FROM VARIANTES_PRODUCTOS WHERE ID_PRODUCTO = ? AND ID_ESTATUS = 1",
+        [idProd]
+      );
+
+      const currentIds = currentVars.map((v) => v.ID_VARIANTE);
+      const incomingIds = variantes
+        .filter((v) => v.idVariante !== undefined)
+        .map((v) => v.idVariante as number);
+
+      const toDelete = currentIds.filter((id) => !incomingIds.includes(id));
+
+      if (toDelete.length > 0) {
+        await conn.query(
+          `UPDATE VARIANTES_PRODUCTOS SET ID_ESTATUS = 2 WHERE ID_VARIANTE IN (?)`,
+          [toDelete]
+        );
+      }
+
+      let stockTotalCalculado = 0;
+
+      for (const v of variantes) {
+        stockTotalCalculado += v.stock;
+        if (v.idVariante) {
+          const query = `
+            UPDATE VARIANTES_PRODUCTOS SET
+              ID_COLOR = ?, 
+              DESCUENTO = ?, 
+              PRECIO = ?, 
+              FOTO = ?, 
+              IND_ALMACEN = ?, 
+              STOCK = ?, 
+              STOCK_WARN = ?
+            WHERE ID_VARIANTE = ?
+          `;
+          await conn.query(query, [
+            v.idColor,
+            v.descuento,
+            v.precio,
+            v.foto,
+            v.indAlmacen,
+            v.stock,
+            v.stockWarn,
+            v.idVariante,
+          ]);
+        } else {
+          const query = `
+            INSERT INTO VARIANTES_PRODUCTOS 
+            (ID_PRODUCTO, ID_COLOR, ID_ESTATUS, DESCUENTO, PRECIO, FOTO, IND_ALMACEN, STOCK, STOCK_WARN)
+            VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)
+          `;
+
+          await conn.query(query, [
+            idProd,
+            v.idColor,
+            v.descuento,
+            v.precio,
+            v.foto || "",
+            v.indAlmacen,
+            v.stock,
+            v.stockWarn,
+          ]);
+        }
+      }
+
+      const camposProducto: any = { ...prodData };
+      camposProducto.STOCK_TOTAL = stockTotalCalculado;
+
+      if (Object.keys(camposProducto).length > 0) {
+        const setClause = Object.keys(camposProducto)
+          .map((key) => {
+            const dbKey =
+              key === "descCorta"
+                ? "DESC_CORTA"
+                : key === "stockWarn"
+                ? "STOCK_WARN"
+                : key.toUpperCase();
+            return `${dbKey} = ?`;
+          })
+          .join(", ");
+
+        const values = Object.values(camposProducto);
+
+        const query = `
+            UPDATE PRODUCTOS SET 
+                NOMBRE = COALESCE(?, NOMBRE),
+                DESC_CORTA = COALESCE(?, DESC_CORTA),
+                DESCRIPCION = COALESCE(?, DESCRIPCION),
+                STOCK_WARN = COALESCE(?, STOCK_WARN),
+                STOCK_TOTAL = ?
+            WHERE ID_PRODUCTO = ?
+        `;
+
+        await conn.query(query, [
+          prodData.nombre || null,
+          prodData.descCorta || null,
+          prodData.descripcion || null,
+          prodData.stockWarn || null,
+          stockTotalCalculado,
+          idProd,
+        ]);
+      }
+
+      await conn.commit();
+      return true;
+    } catch (e) {
+      if (conn) await conn.rollback();
+      throw e;
+    } finally {
+      if (conn) conn.release();
+    }
+  }
 }
 
 export default new ProductosRepository();

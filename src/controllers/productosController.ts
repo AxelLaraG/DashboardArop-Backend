@@ -7,7 +7,7 @@ import auditoriasRepository from "../repositories/auditoriasRepository";
 
 export const crearProducto = async (
   req: RequestUsuario,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   const userId = req.user.id;
   const { idTienda, producto, variantes } = req.body;
@@ -23,7 +23,7 @@ export const crearProducto = async (
 
     const totalStock = variantes.reduce(
       (acc: number, curr: any) => acc + curr.stock,
-      0,
+      0
     );
 
     const newProd: NewProducto = {
@@ -47,7 +47,7 @@ export const crearProducto = async (
 
     const idProd = await productosRepository.crearProductoConVariantes(
       newProd,
-      newVar,
+      newVar
     );
 
     if (idProd) {
@@ -66,11 +66,16 @@ export const crearProducto = async (
   }
 };
 
-export const listarProductosPorTienda = async (req: RequestUsuario, res: Response): Promise<void> => {
+export const listarProductosPorTienda = async (
+  req: RequestUsuario,
+  res: Response
+): Promise<void> => {
   const { shopId } = req.params;
 
   try {
-    const productos = await productosRepository.getProductoPorTienda(Number(shopId));
+    const productos = await productosRepository.getProductoPorTienda(
+      Number(shopId)
+    );
     res.json(productos);
   } catch (e) {
     console.error(e);
@@ -78,7 +83,55 @@ export const listarProductosPorTienda = async (req: RequestUsuario, res: Respons
   }
 };
 
-export const editProducto = async (req: RequestUsuario, res: Response): Promise<void> => { 
+export const editarProductoCompleto = async (
+  req: RequestUsuario,
+  res: Response
+): Promise<void> => {
   const userId = req.user.id;
-  const { prod, var } = req.body;
-}
+  const { id } = req.params;
+  const { producto, variantes } = req.body;
+
+  try {
+    const prodAct = await productosRepository.findProducto(Number(id));
+
+    if (!prodAct) {
+      res.status(404).json({ message: "Producto no encontrado" });
+      return;
+    }
+
+    if (req.user.role === 2) {
+      const esDueno = await tiendaRepository.validateOwner(
+        userId,
+        prodAct.ID_TIENDA
+      );
+      if (!esDueno) {
+        res.status(403).json({
+          message: "No tienes permiso para editar productos de esta tienda",
+        });
+        return;
+      }
+    }
+
+    const exito = await productosRepository.productoUpdate(
+      Number(id),
+      producto,
+      variantes
+    );
+
+    if (exito) {
+      await auditoriasRepository.setNewAuditoria({
+        ID_USUARIO: userId,
+        TABLA: "PRODUCTOS/VARIANTES",
+        TRANSACCION: `UPDATE_FULL_PRODUCT (ID: ${id})`,
+        USER_AGENT: req.get("User-Agent") || "Desconocido",
+      });
+
+      res.json({ message: "Producto y variantes actualizados correctamente" });
+    } else {
+      res.status(500).json({ message: "No se pudieron guardar los cambios" });
+    }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Error interno al editar producto" });
+  }
+};

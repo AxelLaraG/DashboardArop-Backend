@@ -44,6 +44,24 @@ export interface VariantesProductos extends RowDataPacket {
   STOCK_WARN: number;
 }
 
+export interface VarianteEdit {
+  idVariante?: number;
+  idColor: number;
+  descuento: number;
+  precio: number;
+  foto?: string;
+  indAlmacen: boolean;
+  stock: number;
+  stockWarn: number;
+}
+
+export interface ProductoEdit {
+  nombre?: string;
+  descCorta?: string;
+  descripcion?: string;
+  stockWarn?: number;
+}
+
 export type NewTienda = Omit<
   Tiendas,
   "ID_TIENDA" | "ID_ESTATUS" | "ID_DIRECCION"
@@ -60,3 +78,4 @@ export type NewVarianteProducto = Omit<
 > & {
   ID_PRODUCTO?: number;
 };
+
