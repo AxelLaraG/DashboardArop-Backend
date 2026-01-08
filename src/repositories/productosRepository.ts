@@ -122,59 +122,103 @@ class ProductosRepository {
       conn = await db.getConnection();
       await conn.beginTransaction();
 
-      const [currentVars] = await conn.query<VariantesProductos[]>(
-        "SELECT ID_VARIANTE FROM VARIANTES_PRODUCTOS WHERE ID_PRODUCTO = ? AND ID_ESTATUS = 1",
+      /*
+       * Bloquear filas para evitar condiciones de carrera
+       */
+      const [currentProdRows] = await conn.query<Productos[]>(
+        "SELECT * FROM PRODUCTOS WHERE ID_PRODUCTO = ? FOR UPDATE",
         [idProd]
       );
 
-      const currentIds = currentVars.map((v) => v.ID_VARIANTE);
-      const incomingIds = variantes
-        .filter((v) => v.idVariante !== undefined)
-        .map((v) => v.idVariante as number);
+      const [currentVarRows] = await conn.query<Productos[]>(
+        "SELECT * FROM VARIANTES_PRODUCTO WHERE ID_PRODUCTO = ? AND ID_ESTATUS = 1 FOR UPDATE",
+        [idProd]
+      );
 
-      const toDelete = currentIds.filter((id) => !incomingIds.includes(id));
-
-      if (toDelete.length > 0) {
-        await conn.query(
-          `UPDATE VARIANTES_PRODUCTOS SET ID_ESTATUS = 2 WHERE ID_VARIANTE IN (?)`,
-          [toDelete]
-        );
+      if (currentProdRows.length === 0 || currentVarRows.length === 0) {
+        throw new Error("Producto no encontrado");
       }
 
-      let stockTotalCalculado = 0;
+      const currentProd = currentProdRows[0];
 
+      let newStock = 0;
+      const incomingIds: number[] = [];
+
+      /*
+       * Recorremos todas las variantes recibidas
+       */
       for (const v of variantes) {
-        stockTotalCalculado += v.stock;
+        newStock += v.stock;
+
         if (v.idVariante) {
-          const query = `
-            UPDATE VARIANTES_PRODUCTOS SET
-              ID_COLOR = ?, 
-              DESCUENTO = ?, 
-              PRECIO = ?, 
-              FOTO = ?, 
-              IND_ALMACEN = ?, 
-              STOCK = ?, 
-              STOCK_WARN = ?
-            WHERE ID_VARIANTE = ?
-          `;
-          await conn.query(query, [
-            v.idColor,
-            v.descuento,
-            v.precio,
-            v.foto,
-            v.indAlmacen,
-            v.stock,
-            v.stockWarn,
-            v.idVariante,
-          ]);
+          /*
+           * Si tiene idVariante entonces es un update
+           */
+          incomingIds.push(v.idVariante);
+          const original = currentVarRows.find(
+            (currentVar) => currentVar.ID_VARIANTE === v.idVariante
+          );
+
+          if (original) {
+            const updates: any = {};
+            const cambios: string[] = [];
+
+            if (v.idColor !== original.ID_COLOR) {
+              updates.ID_COLOR = v.idColor;
+              cambios.push("Color");
+            }
+            if (v.descuento !== original.DESCUENTO) {
+              updates.DESCUENTO = v.descuento;
+              cambios.push("Descuento");
+            }
+            if (v.precio !== Number(original.PRECIO)) {
+              updates.PRECIO = v.precio;
+              cambios.push("Precio");
+            }
+            if ((v.foto || "") !== (original.FOTO || "")) {
+              updates.FOTO = v.foto || "";
+              cambios.push("Foto");
+            }
+            const indAlmacenBool = original.IND_ALMACEN === 1;
+            if (v.indAlmacen !== indAlmacenBool) {
+              updates.IND_ALMACEN = v.indAlmacen ? 1 : 0;
+              cambios.push("Almacen");
+            }
+            if (v.stock !== original.STOCK) {
+              updates.STOCK = v.stock;
+              cambios.push("Stock");
+            }
+            if (v.stockWarn !== original.STOCK_WARN) {
+              updates.STOCK_WARN = v.stockWarn;
+              cambios.push("StockWarn");
+            }
+
+            if (Object.keys(updates).length > 0) {
+              const setClause = Object.keys(updates)
+                .map((key) => `${key} = ?`)
+                .join(", ");
+              const values = Object.values(updates);
+
+              await conn.query(
+                `UPDATE VARIANTES_PRODUCTOS SET ${setClause} WHERE ID_VARIANTE = ?`,
+                [...values, v.idVariante]
+              );
+              console.log(
+                `Variante ${v.idVariante} actualizada: ${cambios.join(", ")}`
+              );
+            }
+          }
         } else {
-          const query = `
+          /*
+           * Si no tiene idVariante entonces es un insert
+           */
+          const queryInsertVar = `
             INSERT INTO VARIANTES_PRODUCTOS 
             (ID_PRODUCTO, ID_COLOR, ID_ESTATUS, DESCUENTO, PRECIO, FOTO, IND_ALMACEN, STOCK, STOCK_WARN)
             VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)
           `;
 
-          await conn.query(query, [
+          await conn.query(queryInsertVar, [
             idProd,
             v.idColor,
             v.descuento,
@@ -187,42 +231,58 @@ class ProductosRepository {
         }
       }
 
-      const camposProducto: any = { ...prodData };
-      camposProducto.STOCK_TOTAL = stockTotalCalculado;
+      const toDelete = currentVarRows
+        .filter((cv) => !incomingIds.includes(cv.ID_VARIANTE))
+        .map((cv) => cv.ID_VARIANTE);
 
-      if (Object.keys(camposProducto).length > 0) {
-        const setClause = Object.keys(camposProducto)
-          .map((key) => {
-            const dbKey =
-              key === "descCorta"
-                ? "DESC_CORTA"
-                : key === "stockWarn"
-                ? "STOCK_WARN"
-                : key.toUpperCase();
-            return `${dbKey} = ?`;
-          })
+      if (toDelete.length > 0) {
+        await conn.query(
+          `UPDATE VARIANTES_PRODUCTOS SET ID_ESTATUS = 2 WHERE ID_VARIANTE IN (?)`,
+          [toDelete]
+        );
+      }
+
+      /*
+       * Se buscan modificaciones en los datos del producto
+       */
+
+      const prodUpdates: any = {};
+
+      if (prodData.nombre && prodData.nombre !== currentProd?.NOMBRE) {
+        prodUpdates.NOMBRE = prodData.nombre;
+      }
+      if (
+        prodData.descCorta &&
+        prodData.descCorta !== currentProd?.DESC_CORTA
+      ) {
+        prodUpdates.DESC_CORTA = prodData.descCorta;
+      }
+      if (
+        prodData.descripcion &&
+        prodData.descripcion !== currentProd?.DESCRIPCION
+      ) {
+        prodUpdates.DESCRIPCION = prodData.descripcion;
+      }
+      if (
+        prodData.stockWarn !== undefined &&
+        prodData.stockWarn !== currentProd?.STOCK_WARN
+      ) {
+        prodUpdates.STOCK_WARN = prodData.stockWarn;
+      }
+      if (newStock !== currentProd?.STOCK_TOTAL) {
+        prodUpdates.STOCK_TOTAL = newStock;
+      }
+
+      if (Object.keys(prodUpdates).length > 0) {
+        const setClause = Object.keys(prodUpdates)
+          .map((key) => `${key} = ?`)
           .join(", ");
+        const values = Object.values(prodUpdates);
 
-        const values = Object.values(camposProducto);
-
-        const query = `
-            UPDATE PRODUCTOS SET 
-                NOMBRE = COALESCE(?, NOMBRE),
-                DESC_CORTA = COALESCE(?, DESC_CORTA),
-                DESCRIPCION = COALESCE(?, DESCRIPCION),
-                STOCK_WARN = COALESCE(?, STOCK_WARN),
-                STOCK_TOTAL = ?
-            WHERE ID_PRODUCTO = ?
-        `;
-
-        await conn.query(query, [
-          prodData.nombre || null,
-          prodData.descCorta || null,
-          prodData.descripcion || null,
-          prodData.stockWarn || null,
-          stockTotalCalculado,
-          idProd,
-        ]);
+        await conn.query(
+          `UPDATE PRODUCTOS SET ${setClause} WHERE ID_PRODUCTO = ?`,
+          [...values, prodUpdates]
+        );
       }
 
       await conn.commit();
@@ -233,6 +293,14 @@ class ProductosRepository {
     } finally {
       if (conn) conn.release();
     }
+  }
+
+  async checkStock(id: number): Promise<number | null> {
+    const query = "SELECT STOCK FROM VARIANTES_PRODUCTO WHERE ID_VARIANTE = ?";
+    const [rows] = await db.query<RowDataPacket[]>(query, [id]);
+
+    if (rows.length === 0) return null;
+    return rows[0]?.STOCK;
   }
 }
 

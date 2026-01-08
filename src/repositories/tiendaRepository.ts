@@ -116,7 +116,7 @@ class TiendaRepository {
       conn = await db.getConnection();
       await conn.beginTransaction();
 
-      const queryDir = `SELECT ID_DIRECCION FROM TIENDAS WHERE ID_TIENDA = ?`;
+      const queryDir = `SELECT ID_DIRECCION FROM TIENDAS WHERE ID_TIENDA = ? FOR UPDATE`;
       const [tiendaRows] = await conn.query<RowDataPacket[]>(queryDir, [
         idShop,
       ]);
