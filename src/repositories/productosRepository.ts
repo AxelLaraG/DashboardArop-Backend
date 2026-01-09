@@ -163,15 +163,15 @@ class ProductosRepository {
             const updates: any = {};
             const cambios: string[] = [];
 
-            if (v.idColor !== original.ID_COLOR) {
+            if (v.idColor && v.idColor !== original.ID_COLOR) {
               updates.ID_COLOR = v.idColor;
               cambios.push("Color");
             }
-            if (v.descuento !== original.DESCUENTO) {
+            if (v.descuento && v.descuento !== original.DESCUENTO) {
               updates.DESCUENTO = v.descuento;
               cambios.push("Descuento");
             }
-            if (v.precio !== Number(original.PRECIO)) {
+            if (v.precio && v.precio !== Number(original.PRECIO)) {
               updates.PRECIO = v.precio;
               cambios.push("Precio");
             }
@@ -180,15 +180,15 @@ class ProductosRepository {
               cambios.push("Foto");
             }
             const indAlmacenBool = original.IND_ALMACEN === 1;
-            if (v.indAlmacen !== indAlmacenBool) {
+            if (v.indAlmacen && v.indAlmacen !== indAlmacenBool) {
               updates.IND_ALMACEN = v.indAlmacen ? 1 : 0;
               cambios.push("Almacen");
             }
-            if (v.stock !== original.STOCK) {
+            if (v.stock && v.stock !== original.STOCK) {
               updates.STOCK = v.stock;
               cambios.push("Stock");
             }
-            if (v.stockWarn !== original.STOCK_WARN) {
+            if (v.stockWarn && v.stockWarn !== original.STOCK_WARN) {
               updates.STOCK_WARN = v.stockWarn;
               cambios.push("StockWarn");
             }
@@ -237,7 +237,7 @@ class ProductosRepository {
 
       if (toDelete.length > 0) {
         await conn.query(
-          `UPDATE VARIANTES_PRODUCTOS SET ID_ESTATUS = 2 WHERE ID_VARIANTE IN (?)`,
+          `UPDATE VARIANTES_PRODUCTOS SET ID_ESTATUS = 4 WHERE ID_VARIANTE IN (?)`,
           [toDelete]
         );
       }
@@ -301,6 +301,42 @@ class ProductosRepository {
 
     if (rows.length === 0) return null;
     return rows[0]?.STOCK;
+  }
+
+  async eliminarProducto(id: number): Promise<boolean> {
+    let conn: PoolConnection | null = null;
+
+    try {
+      conn = await db.getConnection();
+      await conn.beginTransaction();
+
+      const [prod] = await conn.query<RowDataPacket[]>(
+        "SELECT ID_PRODUCTO FROM PRODUCTOS WHERE ID_PRODUCTO = ? FOR UPDATE",
+        [id]
+      );
+
+      if (prod.length === 0) {
+        await conn.rollback();
+        return false;
+      }
+
+      const queryBajaVariantes = `
+        UPDATE VARIANTES_PRODUCTOS 
+        SET ID_ESTATUS = 4 
+        WHERE ID_PRODUCTO = ?
+      `;
+
+      const [res] = await conn.query<any>(queryBajaVariantes, [id]);
+
+      await conn.commit();
+
+      return true;
+    } catch (e) {
+      if (conn) await conn.rollback();
+      throw e;
+    } finally {
+      if (conn) conn.release();
+    }
   }
 }
 

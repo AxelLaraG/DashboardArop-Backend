@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   crearProducto,
   editarProductoCompleto,
+  eliminarProducto,
   listarProductosPorTienda,
 } from "../controllers/productosController";
 import { validarToken } from "../middlewares/auth";
@@ -36,5 +37,12 @@ router.put(
   permitirRoles(1, 2),
   validate(editProducto),
   editarProductoCompleto
+);
+
+router.delete(
+  "/:id",
+  validarToken,
+  permitirRoles(1,2),
+  eliminarProducto
 );
 export default router;

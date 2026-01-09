@@ -70,9 +70,23 @@ export const listarProductosPorTienda = async (
   req: RequestUsuario,
   res: Response
 ): Promise<void> => {
+  const userId = req.user.id;
   const { shopId } = req.params;
 
   try {
+    if (req.user.role === 2) {
+      const esDueno = await tiendaRepository.validateOwner(
+        userId,
+        Number(shopId)
+      );
+      if (!esDueno) {
+        res.status(403).json({
+          message: "No tienes permiso para ver productos de esta tienda",
+        });
+        return;
+      }
+    }
+
     const productos = await productosRepository.getProductoPorTienda(
       Number(shopId)
     );
@@ -133,5 +147,54 @@ export const editarProductoCompleto = async (
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Error interno al editar producto" });
+  }
+};
+
+export const eliminarProducto = async (
+  req: RequestUsuario,
+  res: Response
+): Promise<void> => {
+  const userId = req.user.id;
+  const { id } = req.params;
+
+  try {
+    const prod = await productosRepository.findProducto(Number(id));
+
+    if (!prod) {
+      res.status(404).json({ message: "Producto no encontrado" });
+      return;
+    }
+
+    if (req.user.role === 2) {
+      const esDueno = await tiendaRepository.validateOwner(
+        userId,
+        prod.ID_TIENDA
+      );
+
+      if (!esDueno) {
+        res.status(403).json({
+          message: "No tienes permiso para eliminar productos de esta tienda",
+        });
+        return;
+      }
+    }
+
+    const exito = await productosRepository.eliminarProducto(Number(id));
+
+    if (exito) {
+      await auditoriasRepository.setNewAuditoria({
+        ID_USUARIO: userId,
+        TABLA: "PRODUCTOS",
+        TRANSACCION: `DELETE_PRODUCT (ID: ${id} - BAJA LÓGICA DE VARIANTES)`,
+        USER_AGENT: req.get("User-Agent") || "Desconocido",
+      });
+
+      res.json({ message: "Producto eliminado correctamente" });
+    } else {
+      res.status(404).json({ message: "No se pudo eliminar el producto" });
+    }
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Error interno al eliminar el producto" });
   }
 };

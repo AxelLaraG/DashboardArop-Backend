@@ -33,13 +33,14 @@ export const getProductosShop = z.object({
 
 export const editVariante = z.object({
   idVariante: z.number().int().positive().optional(),
-  idColor: z.number().int().positive(),
-  descuento: z.number().min(0).max(100).default(0),
-  precio: z.number().positive(),
+  idColor: z.number().int().positive().optional(),
+  idEstatus: z.number().int().positive().optional(),
+  descuento: z.number().min(0).max(100).default(0).optional(),
+  precio: z.number().positive().optional(),
   foto: z.url().optional(),
-  indAlmacen: z.boolean().default(true),
-  stock: z.number().int().min(0),
-  stockWarn: z.number().int().default(5),
+  indAlmacen: z.boolean().optional(),
+  stock: z.number().int().min(0).optional(),
+  stockWarn: z.number().int().default(5).optional(),
 });
 
 export const editProducto = z.object({
@@ -48,6 +49,7 @@ export const editProducto = z.object({
   }),
   body: z.object({
     producto: z.object({
+      idTienda: z.number().int().positive().optional(),
       nombre: z.string().min(3).optional(),
       descCorta: z.string().max(100).optional(),
       descripcion: z.string().optional(),
